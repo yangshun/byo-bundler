@@ -10,9 +10,9 @@ function build({ entryFile, outputFolder }) {
   // write to output folder
   for (const outputFile of outputFiles) {
     fs.writeFileSync(
-      path.join(outputFolder, outputFile.name),
+      path.posix.join(outputFolder, outputFile.name),
       outputFile.content,
-      'utf-8'
+      'utf-8',
     );
   }
 }
@@ -44,10 +44,10 @@ class Module {
   }
   findDependencies() {
     return this.ast.program.body
-      .filter(node => node.type === 'ImportDeclaration')
-      .map(node => node.source.value)
-      .map(relativePath => resolveRequest(this.filePath, relativePath))
-      .map(absolutePath => createModule(absolutePath));
+      .filter((node) => node.type === 'ImportDeclaration')
+      .map((node) => node.source.value)
+      .map((relativePath) => resolveRequest(this.filePath, relativePath))
+      .map((absolutePath) => createModule(absolutePath));
   }
   transformModuleInterface() {
     const { types: t } = babel;
@@ -55,17 +55,17 @@ class Module {
     const { ast, code } = babel.transformFromAstSync(this.ast, this.content, {
       ast: true,
       plugins: [
-        function() {
+        function () {
           return {
             visitor: {
               ImportDeclaration(path) {
                 const newIdentifier = path.scope.generateUidIdentifier(
-                  'imported'
+                  'imported',
                 );
 
                 for (const specifier of path.get('specifiers')) {
                   const binding = specifier.scope.getBinding(
-                    specifier.node.local.name
+                    specifier.node.local.name,
                   );
                   const importedKey = specifier.isImportDefaultSpecifier()
                     ? 'default'
@@ -76,8 +76,8 @@ class Module {
                       t.memberExpression(
                         newIdentifier,
                         t.stringLiteral(importedKey),
-                        true
-                      )
+                        true,
+                      ),
                     );
                   }
                 }
@@ -90,12 +90,12 @@ class Module {
                         t.stringLiteral(
                           resolveRequest(
                             filePath,
-                            path.get('source.value').node
-                          )
+                            path.get('source.value').node,
+                          ),
                         ),
-                      ])
+                      ]),
                     ),
-                  ])
+                  ]),
                 );
               },
               ExportDefaultDeclaration(path) {
@@ -106,11 +106,11 @@ class Module {
                       t.memberExpression(
                         t.identifier('exports'),
                         t.identifier('default'),
-                        false
+                        false,
                       ),
-                      t.toExpression(path.get('declaration').node)
-                    )
-                  )
+                      t.toExpression(path.get('declaration').node),
+                    ),
+                  ),
                 );
               },
               ExportNamedDeclaration(path) {
@@ -124,7 +124,7 @@ class Module {
                   } else {
                     path
                       .get('declaration.declarations')
-                      .forEach(declaration => {
+                      .forEach((declaration) => {
                         declarations.push({
                           name: declaration.get('id').node,
                           value: declaration.get('init').node,
@@ -132,7 +132,7 @@ class Module {
                       });
                   }
                 } else {
-                  path.get('specifiers').forEach(specifier => {
+                  path.get('specifiers').forEach((specifier) => {
                     declarations.push({
                       name: specifier.get('exported').node,
                       value: specifier.get('local').node,
@@ -140,19 +140,19 @@ class Module {
                   });
                 }
                 path.replaceWithMultiple(
-                  declarations.map(decl =>
+                  declarations.map((decl) =>
                     t.expressionStatement(
                       t.assignmentExpression(
                         '=',
                         t.memberExpression(
                           t.identifier('exports'),
                           decl.name,
-                          false
+                          false,
                         ),
-                        decl.value
-                      )
-                    )
-                  )
+                        decl.value,
+                      ),
+                    ),
+                  ),
                 );
               },
             },
@@ -167,7 +167,7 @@ class Module {
 
 // resolving
 function resolveRequest(requester, requestPath) {
-  return path.join(path.dirname(requester), requestPath);
+  return path.posix.join(path.dirname(requester), requestPath);
 }
 
 // bundling
@@ -186,7 +186,7 @@ function collectModules(graph) {
   function collect(module, modules) {
     if (!modules.has(module)) {
       modules.add(module);
-      module.dependencies.forEach(dependency => collect(dependency, modules));
+      module.dependencies.forEach((dependency) => collect(dependency, modules));
     }
   }
 }
@@ -238,10 +238,10 @@ function trim(str) {
   const lines = str.split('\n').filter(Boolean);
   const padLength = lines[0].length - lines[0].trimLeft().length;
   const regex = new RegExp(`^\\s{${padLength}}`);
-  return lines.map(line => line.replace(regex, '')).join('\n');
+  return lines.map((line) => line.replace(regex, '')).join('\n');
 }
 
 build({
-  entryFile: path.join(__dirname, '../fixture/index.js'),
-  outputFolder: path.join(__dirname, '../output'),
+  entryFile: path.posix.join(__dirname, '../fixture/index.js'),
+  outputFolder: path.posix.join(__dirname, '../output'),
 });
